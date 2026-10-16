@@ -1,0 +1,49 @@
+
+name: Build 2D Zomboid Mod
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '2D_Zomboid_Forge_1.16.5_source.zip'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Extract source project
+        run: |
+          mkdir source
+          unzip '2D_Zomboid_Forge_1.16.5_source.zip' -d source
+          find source -name gradlew -exec chmod +x {} \;
+
+      - name: Build mod
+        run: |
+          cd source
+          GRADLEW=$(find . -name gradlew -type f | head -n 1)
+          if [ -z "$GRADLEW" ]; then
+            echo "gradlew not found"
+            exit 1
+          fi
+          cd "$(dirname "$GRADLEW")"
+          ./gradlew build --no-daemon
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2D-Zomboid-jar
+          path: source/**/*.jar
+          
